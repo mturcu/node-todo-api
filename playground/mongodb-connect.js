@@ -13,7 +13,7 @@ MongoClient.connect(mongoUrl, { useNewUrlParser: true }, (err, client) => {
   const db = client.db(dbName);
 
   // db.collection('Todos').insertOne({
-  //   text: 'Something to do',
+  //   text: 'Eat lunch',
   //   completed: false
   // }, (err, result) => {
   //   if (err) {
@@ -22,16 +22,17 @@ MongoClient.connect(mongoUrl, { useNewUrlParser: true }, (err, client) => {
   //   console.log(JSON.stringify(result.ops, undefined, 2));
   // });
 
-  // db.collection('Users').insertOne({
-  //   name: 'Anais Labelle',
-  //   age: 21,
-  //   location: 'Edmonton, Canada'
-  // }, (err, result) => {
-  //   if (err) {
-  //     return console.log('Unable to insert user: ', err);
-  //   }
-  //   console.log(JSON.stringify(result.ops, undefined, 2));
-  //   console.log(`Time stamp: ${result.ops[0]._id.getTimestamp()}`);
-  // });
+  db.collection('Users').insertOne({
+    name: 'Andrew',
+    age: 25,
+    location: 'Philadelphia'
+  }, (err, result) => {
+    if (err) {
+      return console.log('Unable to insert user: ', err);
+    }
+    console.log(JSON.stringify(result.ops, undefined, 2));
+    console.log(`Time stamp: ${result.ops[0]._id.getTimestamp()}`);
+  });
+
   client.close(); //.then(console.log('MongoDB connection closed'));
 });
