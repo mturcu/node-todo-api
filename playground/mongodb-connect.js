@@ -1,5 +1,5 @@
 const {MongoClient, ObjectID} = require('mongodb');
-const dbName = 'TodoApp';
+const dbName = 'TodoAppBeta';
 const mongoUrl = `mongodb://localhost:27017/${dbName}`;
 
 // var obj = new ObjectID(); // generate new _id

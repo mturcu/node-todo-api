@@ -1,3 +1,5 @@
 node_modules/
+mongodump/
 package-lock.json
 node-todo-api.code-workspace
+pushall.sh

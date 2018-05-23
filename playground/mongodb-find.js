@@ -1,5 +1,5 @@
 const {MongoClient, ObjectID} = require('mongodb');
-const dbName = 'TodoApp';
+const dbName = 'TodoAppBeta';
 const mongoUrl = `mongodb://localhost:27017/${dbName}`;
 
 MongoClient.connect(mongoUrl, { useNewUrlParser: true }, (err, client) => {

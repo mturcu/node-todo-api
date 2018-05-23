@@ -1,5 +1,5 @@
 const {MongoClient, ObjectID} = require('mongodb');
-const dbName = 'TodoApp';
+const dbName = 'TodoAppBeta';
 const mongoUrl = `mongodb://localhost:27017/${dbName}`;
 
 MongoClient.connect(mongoUrl, { useNewUrlParser: true }, (err, client) => {
@@ -29,7 +29,7 @@ MongoClient.connect(mongoUrl, { useNewUrlParser: true }, (err, client) => {
   db.collection('Users').findOneAndUpdate({
     _id: new ObjectID('5afc2876cbdce657f877ceb1')
   }, {
-    $set: { name: 'Allie Becca Malone' },
+    $set: { name: 'Allie Becca Jensen' },
     $inc: { age: +1 }
   }, {
     returnOriginal: false
