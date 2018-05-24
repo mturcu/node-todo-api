@@ -23,7 +23,7 @@ app.post('/todos', (req, res) => {
     res.send(doc);
   })
   .catch(e => {
-    console.log(`Unable to save todo: ${e}`);
+    console.log(`Unable to save todo: ${e.message}`);
     res.status(400).send(e);
   });
 });
@@ -34,6 +34,22 @@ app.get('/todos', (req, res) => {
     res.send({todos});
   })
   .catch(e => {
+    res.status(400).send(e);
+  });
+});
+
+app.post('/users', (req, res) => {
+  // console.log(req.body);
+  var user = new User({
+    email: req.body.email
+  });
+  user.save()
+  .then(doc => {
+    console.log(`Saved user ${doc}`);
+    res.send(doc);
+  })
+  .catch(e => {
+    console.log(`Unable to save user: ${e.message}`);
     res.status(400).send(e);
   });
 });

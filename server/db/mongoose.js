@@ -4,6 +4,8 @@ const dbName = 'TodoApp';
 const mongoUrl = `mongodb://localhost:27017/${dbName}`;
 
 mongoose.Promise = global.Promise;
-mongoose.connect(mongoUrl);
+mongoose.connect(mongoUrl)
+.then(m => console.log('Connected to database', m.connections[0].name))
+.catch(e => console.log(e.message));
 
 module.exports = { mongoose };
