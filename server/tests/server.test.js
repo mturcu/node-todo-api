@@ -4,7 +4,8 @@ const
 
 const
   {app} = require('./../server'),
-  {Todo} = require('./../models/todo');
+  {Todo} = require('./../models/todo'),
+  {User} = require('./../models/user');
 
 const todos = [{
   text: 'First test todo'
@@ -72,6 +73,21 @@ describe('GET /todos', () => {
       expect(res.body.todos.length).toBe(2);
     })
     .end(done);
+  });
+
+  it('should fetch a todo with a specified _id', done => {
+    Todo.findOne()
+    .then(todo => {
+      let id = todo._id.toString();
+      console.log("ID:", id);
+      request(app)
+      .get(`/todos/${id}`)
+      .expect(200)
+      .expect(res => {
+        expect(res.body.todo._id).toBe(id);
+      })
+      .end(done);
+    });
   });
 
 });

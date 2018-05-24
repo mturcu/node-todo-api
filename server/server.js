@@ -24,7 +24,7 @@ app.post('/todos', (req, res) => {
   })
   .catch(e => {
     console.log(`Unable to save todo: ${e.message}`);
-    res.status(400).send(e);
+    res.status(400).send({error: e.message});
   });
 });
 
@@ -34,7 +34,8 @@ app.get('/todos', (req, res) => {
     res.send({todos});
   })
   .catch(e => {
-    res.status(400).send(e);
+    res.status(400).send({error: e.message});
+    console.log(e.message);
   });
 });
 
@@ -48,7 +49,7 @@ app.get('/todos/:id', (req, res) => {
       res.status(!todo ? 404 : 200).send(!todo ? {error: `_id '${id}' not found`} : {todo});
     })
     .catch(e => {
-      res.status(400).send({error: `Unspecified error`});
+      res.status(400).send({error: e.message});
       console.log(e.message);
     });
   }
@@ -66,7 +67,7 @@ app.post('/users', (req, res) => {
   })
   .catch(e => {
     console.log(`Unable to save user: ${e.message}`);
-    res.status(400).send(e);
+    res.status(400).send({error: e.message});
   });
 });
 
