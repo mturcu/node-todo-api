@@ -8,7 +8,8 @@
   "description": "ToDo: A MongoDB learning project",
   "main": "server/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha server/**/*.test.js",
+    "test-watch": "nodemon --exec 'npm test'"
   },
   "author": "Mihai Turcu",
   "license": "ISC",
@@ -16,6 +17,12 @@
     "body-parser": "^1.18.3",
     "express": "^4.16.3",
     "mongodb": "^3.1.0-beta4",
-    "mongoose": "^5.1.1"
+    "mongoose": "^5.1.1",
+    "nodemon": "^1.17.5"
+  },
+  "devDependencies": {
+    "expect": "^1.20.2",
+    "mocha": "^5.2.0",
+    "supertest": "^3.1.0"
   }
 }
