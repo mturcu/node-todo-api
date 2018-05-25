@@ -1,6 +1,7 @@
 const
   expect = require('expect'),
-  request = require('supertest');
+  request = require('supertest'),
+  {ObjectID} = require('mongodb');
 
 const
   {app} = require('./../server'),
@@ -63,8 +64,7 @@ describe('POST /todos', () => {
 
 });
 
-describe('GET /todos', () => {  
-
+describe('GET /todos', () => {
   it('should fetch all todos', done => {
     request(app)
     .get('/todos')
@@ -74,12 +74,15 @@ describe('GET /todos', () => {
     })
     .end(done);
   });
+});
 
-  it('should fetch a todo with a specified _id', done => {
+describe('GET /todos/:id', () => {
+
+  it('should return 200 and fetch a todo with an existing _id', done => {
     Todo.findOne()
     .then(todo => {
       let id = todo._id.toString();
-      console.log("ID:", id);
+      // console.log("ID:", id);
       request(app)
       .get(`/todos/${id}`)
       .expect(200)
@@ -88,6 +91,22 @@ describe('GET /todos', () => {
       })
       .end(done);
     });
+  });
+
+  it('should return 400 for an invalid _id', done => {
+    let id = 'xxxxxxx';
+    request(app)
+    .get(`/todos/${id}`)
+    .expect(400)
+    .end(done);
+  });
+
+  it('should return 404 for a valid but non-existant _id', done => {
+    let id = new ObjectID().toString();
+    request(app)
+    .get(`/todos/${id}`)
+    .expect(404)
+    .end(done);
   });
 
 });
