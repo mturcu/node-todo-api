@@ -46,7 +46,23 @@ app.get('/todos/:id', (req, res) => {
   } else {
     Todo.findById(id)
     .then(todo => {
-      res.status(!todo ? 404 : 200).send(!todo ? {error: `_id '${id}' not found`} : {todo});
+      res.status(todo ? 200 : 404).send(todo ? {todo} : {error: `_id '${id}' not found`});
+    })
+    .catch(e => {
+      res.status(400).send({error: e.message});
+      console.log(e.message);
+    });
+  }
+});
+
+app.delete('/todos/:id', (req, res) => {
+  let id = req.params.id;
+  if (!ObjectID.isValid(id)) {
+    res.status(400).send({error: `_id '${id}' has an invalid format`});
+  } else {
+    Todo.findByIdAndRemove(id)
+    .then(todo => {
+      res.status(todo ? 200 : 404).send(todo ? {'Deleted': todo} : {error: `_id '${id}' not found`});
     })
     .catch(e => {
       res.status(400).send({error: e.message});
