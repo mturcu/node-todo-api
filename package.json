@@ -2,12 +2,13 @@
   "name": "node-todo-api",
   "version": "1.0.0",
   "engines": {
-    "node": "10.1.0",
-    "npm": "6.0.1"
+    "node": "10.2.1",
+    "npm": "6.1.0"
   },
   "description": "ToDo: A MongoDB learning project",
   "main": "server/server.js",
   "scripts": {
+    "start": "node server/server.js",
     "test": "mocha server/**/*.test.js",
     "test-watch": "nodemon --exec 'npm test'"
   },
