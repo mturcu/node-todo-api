@@ -110,3 +110,54 @@ describe('GET /todos/:id', () => {
   });
 
 });
+
+describe('DELETE /todos/:id', () => {
+
+  it('should return 200 and delete a todo with an existing _id', done => {
+    Todo.findOne()
+    .then(todo => {
+      let id = todo._id.toString();
+      // console.log("ID:", id);
+      request(app)
+      .delete(`/todos/${id}`)
+      .expect(200)
+      .expect(res => {
+        expect(res.body.todo._id).toBe(id);
+      })
+      .end((err, res) => {
+        if (err) return done(err);
+        Todo.findById(id)
+        .then(td => {
+          // console.log(td);}
+          expect(td).toNotExist();
+          done();
+        })
+        .catch(e => {
+          console.log(e.message);
+          done(e);
+        });
+      });
+    })
+    .catch(e => {
+      console.log(e.message);
+      done(e);
+    });
+  });
+
+  it('should return 400 for an invalid _id', done => {
+    let id = 'xxxxxxx';
+    request(app)
+    .delete(`/todos/${id}`)
+    .expect(400)
+    .end(done);
+  });
+
+  it('should return 404 for a valid but non-existant _id', done => {
+    let id = new ObjectID().toString();
+    request(app)
+    .delete(`/todos/${id}`)
+    .expect(404)
+    .end(done);
+  });
+
+});
