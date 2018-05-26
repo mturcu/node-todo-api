@@ -11,7 +11,9 @@ const
 const todos = [{
   text: 'First test todo'
 },{
-  text: 'Second test todo'
+  text: 'Second test todo',
+  completed: true,
+  completedAt: 333
 }];
 
 beforeEach(done => {
@@ -156,6 +158,72 @@ describe('DELETE /todos/:id', () => {
     let id = new ObjectID().toString();
     request(app)
     .delete(`/todos/${id}`)
+    .expect(404)
+    .end(done);
+  });
+
+});
+
+describe('PATCH /todos/:id', () => {
+
+  it('should return 200 and UPDATE a todo to completed', done => {
+    Todo.findOne({completed: false})
+    .then(todo => {
+      let id = todo._id.toString();
+      let text = 'Test 01';
+      request(app)
+      .patch(`/todos/${id}`)
+      .send({text, completed: true})
+      .expect(200)
+      .expect(res => {
+        expect(res.body.todo._id).toBe(id);
+        expect(res.body.todo.text).toBe(text);
+        expect(res.body.todo.completed).toBe(true);
+        expect(res.body.todo.completedAt).toBeA('number');
+      })
+      .end(done);
+    })
+    .catch(e => {
+      console.log(e.message);
+      done(e);
+    });
+  });
+
+  it('should return 200 and UPDATE a todo to not completed', done => {
+    Todo.findOne({completed: true})
+    .then(todo => {
+      let id = todo._id.toString();
+      let text = 'Test 01';
+      request(app)
+      .patch(`/todos/${id}`)
+      .send({text, completed: false})
+      .expect(200)
+      .expect(res => {
+        expect(res.body.todo._id).toBe(id);
+        expect(res.body.todo.text).toBe(text);
+        expect(res.body.todo.completed).toBe(false);
+        expect(res.body.todo.completedAt).toNotExist();
+      })
+      .end(done);
+    })
+    .catch(e => {
+      console.log(e.message);
+      done(e);
+    });
+  });
+
+  it('should return 400 for an invalid _id', done => {
+    let id = 'xxxxxxx';
+    request(app)
+    .patch(`/todos/${id}`)
+    .expect(400)
+    .end(done);
+  });
+
+  it('should return 404 for a valid but non-existant _id', done => {
+    let id = new ObjectID().toString();
+    request(app)
+    .patch(`/todos/${id}`)
     .expect(404)
     .end(done);
   });
