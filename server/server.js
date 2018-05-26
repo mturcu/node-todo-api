@@ -1,6 +1,7 @@
 const
   express = require('express'),
   bodyParser = require('body-parser'),
+  _ = require('lodash'),
   {ObjectID} = require('mongodb'),
   {mongoose} = require('./db/mongoose'),
   {Todo} = require('./models/todo'),
@@ -40,7 +41,7 @@ app.get('/todos', (req, res) => {
 });
 
 app.get('/todos/:id', (req, res) => {
-  let id = req.params.id;
+  let {id} = req.params;
   if (!ObjectID.isValid(id)) {
     res.status(400).send({error: `_id '${id}' has an invalid format`});
   } else {
@@ -56,7 +57,7 @@ app.get('/todos/:id', (req, res) => {
 });
 
 app.delete('/todos/:id', (req, res) => {
-  let id = req.params.id;
+  let {id} = req.params;
   if (!ObjectID.isValid(id)) {
     res.status(400).send({error: `_id '${id}' has an invalid format`});
   } else {
@@ -69,6 +70,29 @@ app.delete('/todos/:id', (req, res) => {
       console.log(e.message);
     });
   }
+});
+
+app.patch('/todos/:id', (req, res) => {
+  let {id} = req.params;
+  let body = _.pick(req.body, ['text', 'completed']);
+  if (!ObjectID.isValid(id)) {
+    return res.status(400).send({error: `_id '${id}' has an invalid format`});
+  }
+  if (_.isBoolean(body.completed) && body.completed) {
+    body.completedAt = new Date().getTime();
+  }
+  else {
+    body.completed = false;
+    body.completedAt = null;
+  }
+  Todo.findByIdAndUpdate(id, { $set:  body }, { new: true })
+  .then(todo => {
+    res.status(todo ? 200 : 404).send(todo ? {todo} : {error: `_id '${id}' not found`});
+  })
+  .catch(e => {
+    res.status(400).send({error: e.message});
+    console.log(e.message);
+  });
 });
 
 app.post('/users', (req, res) => {
