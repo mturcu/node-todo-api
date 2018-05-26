@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const dbName = 'TodoApp';
+const dbName = (process.env.NODE_ENV === 'test') ? 'TodoAppTest' : 'TodoApp';
 const mongoUrl = process.env.MONGODB_URI || `mongodb://localhost:27017/${dbName}`;
 
 mongoose.Promise = global.Promise;
