@@ -4,10 +4,14 @@ const
   _ = require('lodash'),
   {ObjectID} = require('mongodb'),
   {mongoose} = require('./db/mongoose'),
+  jwt = require('jsonwebtoken'),
+
   {Todo} = require('./models/todo'),
   {User} = require('./models/user');
 
 const port = process.env.PORT || 3000;
+
+const authHeader = 'x-auth';
 
 var app = express();
 
@@ -97,13 +101,13 @@ app.patch('/todos/:id', (req, res) => {
 
 app.post('/users', (req, res) => {
   // console.log(req.body);
-  var user = new User({
-    email: req.body.email
-  });
+  let body = _.pick(req.body, ['email', 'password']);
+  let user = new User(body);
   user.save()
-  .then(doc => {
-    console.log(`Saved user ${doc}`);
-    res.send(doc);
+  .then(() => user.generateAuthToken())
+  .then(token => {
+    console.log(`Saved user ${user}`);
+    res.header(authHeader, token).send(user);
   })
   .catch(e => {
     console.log(`Unable to save user: ${e.message}`);
