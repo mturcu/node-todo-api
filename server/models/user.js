@@ -1,10 +1,10 @@
 const
-  mongoose = require('mongoose'),
+   mongoose = require('mongoose'),
   validator = require('validator'),
-  jwt = require('jsonwebtoken'),
-  _ = require('lodash');
+        jwt = require('jsonwebtoken'),
+          _ = require('lodash'),
 
-const secret = 'S3KR3T';
+     config = require('../config/config');
 
 var UserSchema = mongoose.Schema({
   email: {
@@ -42,11 +42,28 @@ UserSchema.methods.toJSON = function() {
 }
 
 UserSchema.methods.generateAuthToken = function() {
-  var user = this;
-  const access = 'auth';
-  var token = jwt.sign({_id: user._id.toHexString(), access}, secret).toString();
+  let user = this;
+  let access = config.access;
+  let token = jwt.sign({_id: user._id.toHexString(), access}, config.secret).toString();
   user.tokens = user.tokens.concat({access, token});
   return user.save().then(() => token);
+}
+
+UserSchema.statics.findByToken = function(token) {
+  let User = this;
+  let decoded;
+  try {
+    decoded = jwt.verify(token, config.secret);
+  }
+  catch(e) {
+    console.log('User.findByToken error:', e.message);
+    return Promise.reject(e);
+  }
+  return User.findOne({
+    '_id': decoded._id,
+    'tokens.token': token,
+    'tokens.access': config.access
+  });
 }
 
 var User = mongoose.model('User', UserSchema);

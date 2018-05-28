@@ -1,17 +1,14 @@
-const
-  express = require('express'),
-  bodyParser = require('body-parser'),
-  _ = require('lodash'),
-  {ObjectID} = require('mongodb'),
-  {mongoose} = require('./db/mongoose'),
-  jwt = require('jsonwebtoken'),
+const express  = require('express'),
+    bodyParser = require('body-parser'),
+             _ = require('lodash'),
+    {ObjectID} = require('mongodb'),
+           jwt = require('jsonwebtoken'),
 
-  {Todo} = require('./models/todo'),
-  {User} = require('./models/user');
-
-const port = process.env.PORT || 3000;
-
-const authHeader = 'x-auth';
+    {mongoose} = require('./db/mongoose'),
+        {Todo} = require('./models/todo'),
+        {User} = require('./models/user'),
+{authenticate} = require('./middleware/authenticate'),
+        config = require('./config/config');
 
 var app = express();
 
@@ -107,7 +104,7 @@ app.post('/users', (req, res) => {
   .then(() => user.generateAuthToken())
   .then(token => {
     console.log(`Saved user ${user}`);
-    res.header(authHeader, token).send(user);
+    res.header(config.authHeader, token).send(user);
   })
   .catch(e => {
     console.log(`Unable to save user: ${e.message}`);
@@ -115,8 +112,12 @@ app.post('/users', (req, res) => {
   });
 });
 
-app.listen(port, () => {
-  console.log(`Server started on port ${port}`);
+app.get('/users/me', authenticate, (req, res) => {
+  res.send(req.user);
+});
+
+app.listen(config.port, () => {
+  console.log(`Server started on port ${config.port}`);
 });
 
 module.exports = {app};
