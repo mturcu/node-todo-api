@@ -1,3 +1,5 @@
+"use strict";
+
 module.exports = {
   port: process.env.PORT || 3000, // Heroku or localhost
   authHeader: 'x-auth',

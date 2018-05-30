@@ -1,3 +1,5 @@
+"use strict";
+
 const
    mongoose = require('mongoose'),
   validator = require('validator'),
@@ -70,7 +72,7 @@ UserSchema.statics.findByToken = function(token) {
 UserSchema.pre('save', function() {
   let user = this;
   if (user.isModified('password')) {
-    console.log('Detected new password');
+    // console.log('Detected new password');
     return bcrypt.hash(user.password, 10)
     .then(hash => user.password = hash);
   }
@@ -78,4 +80,4 @@ UserSchema.pre('save', function() {
 
 var User = mongoose.model('User', UserSchema);
 
-module.exports = { User };
+module.exports = {User};

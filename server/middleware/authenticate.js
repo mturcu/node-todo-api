@@ -1,7 +1,8 @@
+"use strict";
+
 const
   {User} = require('../models/user'),
   config = require('../config/config');
-
 
 var authenticate = (req, res, next) => {
   let token = req.header(config.authHeader);
@@ -19,4 +20,4 @@ var authenticate = (req, res, next) => {
   });
 }
 
-module.exports = { authenticate };
+module.exports = {authenticate};

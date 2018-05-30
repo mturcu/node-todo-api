@@ -1,6 +1,9 @@
+"use strict";
+
 const
   mongoose = require('mongoose'),
-  config   = require('../config/config');
+
+    config = require('../config/config'); 
 
 mongoose.Promise = global.Promise;
 mongoose.connect(config.mongoUrl)

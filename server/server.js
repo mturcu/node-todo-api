@@ -1,4 +1,6 @@
-const express  = require('express'),
+"use strict";
+
+const  express = require('express'),
     bodyParser = require('body-parser'),
              _ = require('lodash'),
     {ObjectID} = require('mongodb'),
