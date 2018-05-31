@@ -2,10 +2,10 @@
 
 const
   {User} = require('../models/user'),
-  config = require('../config/config');
+  {authHeader} = require('../config/config');
 
 var authenticate = (req, res, next) => {
-  let token = req.header(config.authHeader);
+  let token = req.header(authHeader);
   User.findByToken(token)
   .then(user => {
     if (!user) {

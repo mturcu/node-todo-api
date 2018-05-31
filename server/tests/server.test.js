@@ -321,3 +321,79 @@ describe('POST /users', () => {
   });
 
 });
+
+describe('POST /users/login', () => {
+
+  it('should login a user with valid email and password', done => {
+    var myUser = {
+      email: 'john@doe.org',
+      password: 'userOnePass'
+    };
+    request(app)
+    .post('/users/login')
+    .send(myUser)
+    .expect(200)
+    .expect(res => {
+      expect(res.headers[authHeader]).toExist();
+      expect(res.body._id).toExist();
+      expect(res.body.email).toBe(myUser.email);
+    })
+    .end(err => {
+      if (err) return done(err);
+      User.findOne({email: myUser.email})
+      .then(user => {
+        expect(user).toExist();
+        expect(user.email).toBe(myUser.email);
+        expect(user.tokens[0].token).toExist();
+        done();
+      })
+      .catch(e => done(e));
+    });
+  });
+
+  it('should fail login for unknown email', done => {
+    var myUser = {
+      email: 'user@notme.org',
+      password: 'userPass'
+    };
+    request(app)
+    .post('/users/login')
+    .send(myUser)
+    .expect(401)
+    .expect(res => {
+      expect(res.headers[authHeader]).toNotExist();
+      expect(res.body._id).toNotExist();
+      expect(res.body.error).toExist();
+    })
+    .end(err => {
+      if (err) return done(err);
+      User.findOne({email: myUser.email})
+      .then(user => {
+        expect(user).toNotExist();
+        done();
+      })
+      .catch(e => done(e));
+    });
+  });
+
+  it('should fail login for bad password', done => {
+    var myUser = {
+      email: 'john@doe.org',
+      password: 'userPass'
+    };
+    request(app)
+    .post('/users/login')
+    .send(myUser)
+    .expect(401)
+    .expect(res => {
+      expect(res.headers[authHeader]).toNotExist();
+      expect(res.body._id).toNotExist();
+      expect(res.body.error).toExist();
+    })
+    .end(err => {
+      if (err) return done(err);
+      done();
+    });
+  });
+
+});

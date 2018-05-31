@@ -7,7 +7,7 @@ const
      bcrypt = require('bcryptjs'),
           _ = require('lodash'),
 
-     config = require('../config/config');
+{access, secret} = require('../config/config');
 
 var UserSchema = mongoose.Schema({
   email: {
@@ -46,17 +46,17 @@ UserSchema.methods.toJSON = function() {
 
 UserSchema.methods.generateAuthToken = function() {
   let user = this;
-  let access = config.access;
-  let token = jwt.sign({_id: user._id.toHexString(), access}, config.secret).toString();
+  let token = jwt.sign({_id: user._id.toHexString(), access}, secret).toString();
   user.tokens = user.tokens.concat({access, token});
-  return user.save().then(() => token);
+  return user.save()
+  .then(() => token);
 }
 
 UserSchema.statics.findByToken = function(token) {
   let User = this;
   let decoded;
   try {
-    decoded = jwt.verify(token, config.secret);
+    decoded = jwt.verify(token, secret);
   }
   catch(e) {
     console.log('User.findByToken error:', e.message);
@@ -65,7 +65,20 @@ UserSchema.statics.findByToken = function(token) {
   return User.findOne({
     '_id': decoded._id,
     'tokens.token': token,
-    'tokens.access': config.access
+    'tokens.access': access
+  });
+}
+
+UserSchema.statics.findByCredentials = function(email, password) {
+  let User = this;
+  return User.findOne({email})
+  .then(user => {
+    if (!user) return Promise.reject({message: 'User not found'});
+    return bcrypt.compare(password, user.password)
+    .then(pwd => {
+      if (!pwd) return Promise.reject({message: 'Bad password'});
+      return user;
+    });
   });
 }
 
