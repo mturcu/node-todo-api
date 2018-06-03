@@ -1,5 +1,6 @@
 node_modules/
 mongodump/
+server/config/config.json
 package-lock.json
 node-todo-api.code-workspace
 pushall.sh

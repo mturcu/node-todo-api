@@ -1,10 +1,16 @@
 "use strict";
 
+const env = process.env.NODE_ENV || 'development';
+if (env === 'development' || env === 'test') {
+  const jsonConfig = require('./config.json');
+  const envConfig = jsonConfig[env];
+  Object.keys(envConfig).forEach(key => process.env[key] = envConfig[key]);
+}
+
 module.exports = {
-  port: process.env.PORT || 3000, // Heroku or localhost
+  port: process.env.PORT,
   authHeader: 'x-auth',
   access: 'auth',
-  secret: 'S3KR3T',
-  mongoUrl: process.env.MONGODB_URI || // Heroku env
-           `mongodb://localhost:27017/${(process.env.NODE_ENV === 'test') ? 'TodoAppTest' : 'TodoApp'}`
-}                                      // Test env @ localhost                           // dev env
+  secret: process.env.JWT_SECRET,
+  mongoUrl: process.env.MONGODB_URI
+}

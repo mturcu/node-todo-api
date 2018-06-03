@@ -16,10 +16,10 @@ var app = express();
 
 app.use(bodyParser.json());
 
-app.post('/todos', (req, res) => {
-  // console.log(req.body);
-  var todo = new Todo({
-    text: req.body.text
+app.post('/todos', authenticate, (req, res) => {
+  let todo = new Todo({
+    text: req.body.text,
+    _creator: req.user._id
   });
   todo.save()
   .then(doc => {
@@ -32,8 +32,8 @@ app.post('/todos', (req, res) => {
   });
 });
 
-app.get('/todos', (req, res) => {
-  Todo.find()
+app.get('/todos', authenticate, (req, res) => {
+  Todo.find({_creator: req.user._id})
   .then(todos => {
     res.send({todos});
   })
@@ -43,12 +43,12 @@ app.get('/todos', (req, res) => {
   });
 });
 
-app.get('/todos/:id', (req, res) => {
+app.get('/todos/:id', authenticate, (req, res) => {
   let {id} = req.params;
   if (!ObjectID.isValid(id)) {
     res.status(400).send({error: `_id '${id}' has an invalid format`});
   } else {
-    Todo.findById(id)
+    Todo.findOne({_creator: req.user._id, _id: id})
     .then(todo => {
       res.status(todo ? 200 : 404).send(todo ? {todo} : {error: `_id '${id}' not found`});
     })
@@ -59,12 +59,12 @@ app.get('/todos/:id', (req, res) => {
   }
 });
 
-app.delete('/todos/:id', (req, res) => {
+app.delete('/todos/:id', authenticate, (req, res) => {
   let {id} = req.params;
   if (!ObjectID.isValid(id)) {
     res.status(400).send({error: `_id '${id}' has an invalid format`});
   } else {
-    Todo.findByIdAndRemove(id)
+    Todo.findOneAndRemove({_creator: req.user._id, _id: id})
     .then(todo => {
       res.status(todo ? 200 : 404).send(todo ? {todo} : {error: `_id '${id}' not found`});
     })
@@ -75,7 +75,7 @@ app.delete('/todos/:id', (req, res) => {
   }
 });
 
-app.patch('/todos/:id', (req, res) => {
+app.patch('/todos/:id', authenticate, (req, res) => {
   let {id} = req.params;
   let body = _.pick(req.body, ['text', 'completed']);
   if (!ObjectID.isValid(id)) {
@@ -88,7 +88,7 @@ app.patch('/todos/:id', (req, res) => {
     body.completed = false;
     body.completedAt = null;
   }
-  Todo.findByIdAndUpdate(id, { $set:  body }, { new: true })
+  Todo.findOneAndUpdate({_creator: req.user._id, _id: id}, { $set:  body }, { new: true })
   .then(todo => {
     res.status(todo ? 200 : 404).send(todo ? {todo} : {error: `_id '${id}' not found`});
   })
@@ -127,6 +127,15 @@ app.post('/users/login', (req, res) => {
   })
   .catch(e => {
     console.log(`Unable to login user: ${e.message}`);
+    res.status(401).send({error: e.message});
+  });
+});
+
+app.delete('/users/me/token', authenticate, (req, res) => {
+  return req.user.removeToken(req.token)
+  .then(() => res.status(200).send({message: `User ${req.user.email} logged out`}))
+  .catch(e => {
+    console.log(`Unable to logout user: ${e.message}`);
     res.status(401).send({error: e.message});
   });
 });

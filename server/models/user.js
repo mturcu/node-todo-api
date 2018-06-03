@@ -49,7 +49,19 @@ UserSchema.methods.generateAuthToken = function() {
   let token = jwt.sign({_id: user._id.toHexString(), access}, secret).toString();
   user.tokens = user.tokens.concat({access, token});
   return user.save()
-  .then(() => token);
+  .then(() => token)
+  .catch(e => {
+    console.log('generateAuthToken user.save() error:', e.message);
+  });
+}
+
+UserSchema.methods.removeToken = function(token) {
+  let user = this;
+  return user.update({
+    $pull: { tokens: {token} }
+  })
+  .then(() => console.log('Removed token from user', user.email))
+  .catch(e => console.log('removeToken user.update() error:', e.message));
 }
 
 UserSchema.statics.findByToken = function(token) {

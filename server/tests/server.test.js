@@ -8,7 +8,7 @@ const
   {app} = require('./../server'),
   {Todo} = require('./../models/todo'),
   {User} = require('./../models/user'),
-  {authHeader} = require('../config/config'),
+  {authHeader, access} = require('../config/config'),
   {todos, populateTodos, users, populateUsers} = require('./seed/seed');
 
 beforeEach(populateUsers);
@@ -17,9 +17,10 @@ beforeEach(populateTodos);
 describe('POST /todos', () => {
 
   it('should create a new todo', done => {
-    var text = 'Test todo text';
+    let text = 'Test todo text';
     request(app)
     .post('/todos')
+    .set(authHeader, users[0].tokens[0].token)
     .send({text})
     .expect(200)
     .expect(res => {
@@ -40,13 +41,14 @@ describe('POST /todos', () => {
   it('should not create todo with invalid body data', done => {
     request(app)
     .post('/todos')
+    .set(authHeader, users[0].tokens[0].token)
     .send({})
     .expect(400)
     .end((err, res) => {
       if (err) return done(err);
       Todo.find()
       .then(todos => {
-        expect(todos.length).toBe(2);
+        expect(todos.length).toBe(3);
         done();
       })
       .catch(e => done(e));
@@ -56,12 +58,13 @@ describe('POST /todos', () => {
 });
 
 describe('GET /todos', () => {
-  it('should fetch all todos', done => {
+  it('should fetch all todos created by the authenticated user', done => {
     request(app)
     .get('/todos')
+    .set(authHeader, users[0].tokens[0].token)
     .expect(200)
     .expect(res => {
-      expect(res.body.todos.length).toBe(2);
+      expect(res.body.todos.length).toBe(1);
     })
     .end(done);
   });
@@ -70,15 +73,32 @@ describe('GET /todos', () => {
 describe('GET /todos/:id', () => {
 
   it('should return 200 and fetch a todo with an existing _id', done => {
-    Todo.findOne()
+    Todo.findOne({_creator: users[0]._id})
     .then(todo => {
       let id = todo._id.toString();
       // console.log("ID:", id);
       request(app)
       .get(`/todos/${id}`)
+      .set(authHeader, users[0].tokens[0].token)
       .expect(200)
       .expect(res => {
         expect(res.body.todo._id).toBe(id);
+      })
+      .end(done);
+    });
+  });
+
+  it('should return 404 and not fetch a todo created by another user', done => {
+    Todo.findOne({_creator: users[0]._id})
+    .then(todo => {
+      let id = todo._id.toString();
+      // console.log("ID:", id);
+      request(app)
+      .get(`/todos/${id}`)
+      .set(authHeader, users[1].tokens[0].token)
+      .expect(404)
+      .expect(res => {
+        expect(res.body.error).toExist();
       })
       .end(done);
     });
@@ -88,6 +108,7 @@ describe('GET /todos/:id', () => {
     let id = 'xxxxxxx';
     request(app)
     .get(`/todos/${id}`)
+    .set(authHeader, users[0].tokens[0].token)
     .expect(400)
     .end(done);
   });
@@ -96,57 +117,7 @@ describe('GET /todos/:id', () => {
     let id = new ObjectID().toString();
     request(app)
     .get(`/todos/${id}`)
-    .expect(404)
-    .end(done);
-  });
-
-});
-
-describe('DELETE /todos/:id', () => {
-
-  it('should return 200 and delete a todo with an existing _id', done => {
-    Todo.findOne()
-    .then(todo => {
-      let id = todo._id.toString();
-      // console.log("ID:", id);
-      request(app)
-      .delete(`/todos/${id}`)
-      .expect(200)
-      .expect(res => {
-        expect(res.body.todo._id).toBe(id);
-      })
-      .end((err, res) => {
-        if (err) return done(err);
-        Todo.findById(id)
-        .then(td => {
-          // console.log(td);}
-          expect(td).toNotExist();
-          done();
-        })
-        .catch(e => {
-          console.log(e.message);
-          done(e);
-        });
-      });
-    })
-    .catch(e => {
-      console.log(e.message);
-      done(e);
-    });
-  });
-
-  it('should return 400 for an invalid _id', done => {
-    let id = 'xxxxxxx';
-    request(app)
-    .delete(`/todos/${id}`)
-    .expect(400)
-    .end(done);
-  });
-
-  it('should return 404 for a valid but non-existant _id', done => {
-    let id = new ObjectID().toString();
-    request(app)
-    .delete(`/todos/${id}`)
+    .set(authHeader, users[0].tokens[0].token)
     .expect(404)
     .end(done);
   });
@@ -156,12 +127,13 @@ describe('DELETE /todos/:id', () => {
 describe('PATCH /todos/:id', () => {
 
   it('should return 200 and UPDATE a todo to completed', done => {
-    Todo.findOne({completed: false})
+    Todo.findOne({_creator: users[0]._id, completed: false})
     .then(todo => {
       let id = todo._id.toString();
       let text = 'Test 01';
       request(app)
       .patch(`/todos/${id}`)
+      .set(authHeader, users[0].tokens[0].token)
       .send({text, completed: true})
       .expect(200)
       .expect(res => {
@@ -178,13 +150,14 @@ describe('PATCH /todos/:id', () => {
     });
   });
 
-  it('should return 200 and UPDATE a todo to not completed', done => {
-    Todo.findOne({completed: true})
-    .then(todo => {
+  it('should return 200 and UPDATE a todo to not completed, clearing "completedAt"', done => {
+    Todo.findOne({_creator: users[1]._id, completed: true})
+    .then(todo => { console.log(todo);
       let id = todo._id.toString();
       let text = 'Test 01';
       request(app)
       .patch(`/todos/${id}`)
+      .set(authHeader, users[1].tokens[0].token)
       .send({text, completed: false})
       .expect(200)
       .expect(res => {
@@ -201,10 +174,32 @@ describe('PATCH /todos/:id', () => {
     });
   });
 
+  it('should return 404 and not UPDATE a todo created by another user', done => {
+    Todo.findOne({_creator: users[0]._id, completed: false})
+    .then(todo => {
+      let id = todo._id.toString();
+      let text = 'Test 01';
+      request(app)
+      .patch(`/todos/${id}`)
+      .set(authHeader, users[1].tokens[0].token)
+      .send({text, completed: true})
+      .expect(404)
+      .expect(res => {
+        expect(res.body.error).toExist();
+      })
+      .end(done);
+    })
+    .catch(e => {
+      console.log(e.message);
+      done(e);
+    });
+  });
+
   it('should return 400 for an invalid _id', done => {
     let id = 'xxxxxxx';
     request(app)
     .patch(`/todos/${id}`)
+    .set(authHeader, users[0].tokens[0].token)
     .expect(400)
     .end(done);
   });
@@ -213,6 +208,85 @@ describe('PATCH /todos/:id', () => {
     let id = new ObjectID().toString();
     request(app)
     .patch(`/todos/${id}`)
+    .set(authHeader, users[0].tokens[0].token)
+    .expect(404)
+    .end(done);
+  });
+
+});
+
+describe('DELETE /todos/:id', () => {
+
+  it('should return 200 and delete a todo with an existing _id', done => {
+    Todo.findOne({_creator: users[1]._id})
+    .then(todo => {
+      let id = todo._id.toHexString();
+      // console.log("ID:", id);
+      request(app)
+      .delete(`/todos/${id}`)
+      .set(authHeader, users[1].tokens[0].token)
+      .expect(200)
+      .expect(res => {
+        expect(res.body.todo._id).toBe(id);
+      })
+      .end(err => {
+        if (err) return done(err);
+        return Todo.findById(id)
+        .then(td => {
+          // console.log(td);}
+          expect(td).toNotExist();
+          done();
+        });
+      });
+    })
+    .catch(e => {
+      console.log(e.message);
+      done(e);
+    });
+  });
+
+  it('should return 404 and not delete a todo created by another user', done => {
+    Todo.findOne({_creator: users[1]._id})
+    .then(todo => {
+      let id = todo._id.toHexString();
+      // console.log("ID:", id);
+      request(app)
+      .delete(`/todos/${id}`)
+      .set(authHeader, users[0].tokens[0].token)
+      .expect(404)
+      .expect(res => {
+        expect(res.body.error).toExist();
+      })
+      .end(err => {
+        if (err) return done(err);
+        return Todo.findById(id)
+        .then(td => {
+          // console.log(td);}
+          expect(td).toExist();
+          done();
+        });
+      });
+    })
+    .catch(e => {
+      console.log(e.message);
+      done(e);
+    });
+  });
+
+  it('should return 400 for an invalid _id', done => {
+    let id = 'xxxxxxx';
+    request(app)
+    .delete(`/todos/${id}`)
+    .set(authHeader, users[0].tokens[0].token)
+    .expect(400)
+    .end(done);
+  });
+
+  it('should return 404 for a valid but non-existant _id', done => {
+    let id = new ObjectID().toString();
+    request(app)
+    .delete(`/todos/${id}`)
+    .set(authHeader, users[0].tokens[0].token)
     .expect(404)
     .end(done);
   });
@@ -248,7 +322,7 @@ describe('GET /users/me', () => {
 describe('POST /users', () => {
 
   it('should create a user', done => {
-    var newUser = {
+    let newUser = {
       "email": "admin@infura.io",
       "password": "pwd0pwd1"
     };
@@ -275,7 +349,7 @@ describe('POST /users', () => {
   });
 
   it('should return validation errors if request invalid', done => {
-    var newUser = {
+    let newUser = {
       "email": "ad@in",
       "password": "p1"
     };
@@ -298,7 +372,7 @@ describe('POST /users', () => {
   });
   
   it('should not create user if email is in use', done => {
-    var newUser = {
+    let newUser = {
       "email": "john@doe.org",
       "password": "p1frsdSDA7"
     };
@@ -324,10 +398,10 @@ describe('POST /users', () => {
 
 describe('POST /users/login', () => {
 
-  it('should login a user with valid email and password', done => {
-    var myUser = {
-      email: 'john@doe.org',
-      password: 'userOnePass'
+  it('should login a user with valid email and password and return auth token', done => {
+    let myUser = {
+      email: users[1].email,
+      password: users[1].password
     };
     request(app)
     .post('/users/login')
@@ -338,13 +412,16 @@ describe('POST /users/login', () => {
       expect(res.body._id).toExist();
       expect(res.body.email).toBe(myUser.email);
     })
-    .end(err => {
+    .end((err, res) => {
       if (err) return done(err);
-      User.findOne({email: myUser.email})
+      User.findById(users[1]._id)
       .then(user => {
         expect(user).toExist();
         expect(user.email).toBe(myUser.email);
-        expect(user.tokens[0].token).toExist();
+        expect(user.tokens[1]).toInclude({
+          access,
+          token: res.headers[authHeader]
+        });
         done();
       })
       .catch(e => done(e));
@@ -352,9 +429,9 @@ describe('POST /users/login', () => {
   });
 
   it('should fail login for unknown email', done => {
-    var myUser = {
+    let myUser = {
       email: 'user@notme.org',
-      password: 'userPass'
+      password: 'somePass'
     };
     request(app)
     .post('/users/login')
@@ -377,9 +454,9 @@ describe('POST /users/login', () => {
   });
 
   it('should fail login for bad password', done => {
-    var myUser = {
-      email: 'john@doe.org',
-      password: 'userPass'
+    let myUser = {
+      email: users[1].email,
+      password: users[1].password + 'x'
     };
     request(app)
     .post('/users/login')
@@ -392,7 +469,60 @@ describe('POST /users/login', () => {
     })
     .end(err => {
       if (err) return done(err);
-      done();
+      User.findById(users[1]._id)
+      .then(user => {
+        expect(user.tokens.length).toBe(1);
+        done();
+      })
+      .catch(e => done(e));
+    });
+  });
+
+});
+
+describe('DELETE /users/me/token', () => {
+
+  it('should log out a user with a valid token', done => {
+    let token = users[0].tokens[0].token;
+    request(app)
+    .delete('/users/me/token')
+    .set(authHeader, token)
+    .expect(200)
+    .expect(res => {
+      expect(res.headers[authHeader]).toNotExist();
+      expect(res.body.message).toExist();
+    })
+    .end(err => {
+      if (err) return done(err);
+      User.findById(users[0]._id)
+      .then(user => {
+        expect(user).toExist();
+        expect(user.tokens.length).toBe(0);
+        done();
+      })
+      .catch(e => done(e));
+    });
+  });
+
+  it('should fail logout for unknown token', done => {
+    let token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI1YjBmYWVmY2M1ODIyYTFmYjg4NzM1N2MiLCJhY2Nlc3MiOiJhdXRoIiwiaWF0IjoxNTI3NzU0NDkyfQ.t-ctT4T7SLTAKVhFRDc4WwXgpOSRT5XXEHrAgAuYw30';
+    request(app)
+    .delete('/users/me/token')
+    .set(authHeader, token)
+    .expect(401)
+    .expect(res => {
+      expect(res.headers[authHeader]).toNotExist();
+      expect(res.body._id).toNotExist();
+      expect(res.body.error).toExist();
+    })
+    .end(err => {
+      if (err) return done(err);
+      User.findOne({ tokens: {token} })
+      .then(user => {
+        expect(user).toNotExist();
+        done();
+      })
+      .catch(e => done(e));
     });
   });
 

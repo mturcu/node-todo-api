@@ -9,7 +9,7 @@ var authenticate = (req, res, next) => {
   User.findByToken(token)
   .then(user => {
     if (!user) {
-      return Promise.reject({message: `User not found`});
+      return Promise.reject({message: `User or token not found`});
     }
     req.user = user;
     req.token = token;
