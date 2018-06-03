@@ -8,9 +8,9 @@ if (env === 'development' || env === 'test') {
 }
 
 module.exports = {
-  port: process.env.PORT,
   authHeader: 'x-auth',
   access: 'auth',
   secret: process.env.JWT_SECRET,
+  port: process.env.PORT,
   mongoUrl: process.env.MONGODB_URI
 }

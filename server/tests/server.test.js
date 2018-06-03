@@ -2,7 +2,7 @@
 
 const
   expect = require('expect'),
-  request = require('supertest'),
+  test = require('supertest'),
   {ObjectID} = require('mongodb'),
 
   {app} = require('./../server'),
@@ -18,7 +18,7 @@ describe('POST /todos', () => {
 
   it('should create a new todo', done => {
     let text = 'Test todo text';
-    request(app)
+    test(app)
     .post('/todos')
     .set(authHeader, users[0].tokens[0].token)
     .send({text})
@@ -39,7 +39,7 @@ describe('POST /todos', () => {
   });
 
   it('should not create todo with invalid body data', done => {
-    request(app)
+    test(app)
     .post('/todos')
     .set(authHeader, users[0].tokens[0].token)
     .send({})
@@ -59,7 +59,7 @@ describe('POST /todos', () => {
 
 describe('GET /todos', () => {
   it('should fetch all todos created by the authenticated user', done => {
-    request(app)
+    test(app)
     .get('/todos')
     .set(authHeader, users[0].tokens[0].token)
     .expect(200)
@@ -77,7 +77,7 @@ describe('GET /todos/:id', () => {
     .then(todo => {
       let id = todo._id.toString();
       // console.log("ID:", id);
-      request(app)
+      test(app)
       .get(`/todos/${id}`)
       .set(authHeader, users[0].tokens[0].token)
       .expect(200)
@@ -93,12 +93,12 @@ describe('GET /todos/:id', () => {
     .then(todo => {
       let id = todo._id.toString();
       // console.log("ID:", id);
-      request(app)
+      test(app)
       .get(`/todos/${id}`)
       .set(authHeader, users[1].tokens[0].token)
       .expect(404)
       .expect(res => {
-        expect(res.body.error).toExist();
+        expect(res.body.error).toBeTruthy();
       })
       .end(done);
     });
@@ -106,7 +106,7 @@ describe('GET /todos/:id', () => {
 
   it('should return 400 for an invalid _id', done => {
     let id = 'xxxxxxx';
-    request(app)
+    test(app)
     .get(`/todos/${id}`)
     .set(authHeader, users[0].tokens[0].token)
     .expect(400)
@@ -115,7 +115,7 @@ describe('GET /todos/:id', () => {
 
   it('should return 404 for a valid but non-existant _id', done => {
     let id = new ObjectID().toString();
-    request(app)
+    test(app)
     .get(`/todos/${id}`)
     .set(authHeader, users[0].tokens[0].token)
     .expect(404)
@@ -131,7 +131,7 @@ describe('PATCH /todos/:id', () => {
     .then(todo => {
       let id = todo._id.toString();
       let text = 'Test 01';
-      request(app)
+      test(app)
       .patch(`/todos/${id}`)
       .set(authHeader, users[0].tokens[0].token)
       .send({text, completed: true})
@@ -140,7 +140,7 @@ describe('PATCH /todos/:id', () => {
         expect(res.body.todo._id).toBe(id);
         expect(res.body.todo.text).toBe(text);
         expect(res.body.todo.completed).toBe(true);
-        expect(res.body.todo.completedAt).toBeA('number');
+        expect(typeof res.body.todo.completedAt).toBe('number');
       })
       .end(done);
     })
@@ -155,7 +155,7 @@ describe('PATCH /todos/:id', () => {
     .then(todo => { console.log(todo);
       let id = todo._id.toString();
       let text = 'Test 01';
-      request(app)
+      test(app)
       .patch(`/todos/${id}`)
       .set(authHeader, users[1].tokens[0].token)
       .send({text, completed: false})
@@ -164,7 +164,7 @@ describe('PATCH /todos/:id', () => {
         expect(res.body.todo._id).toBe(id);
         expect(res.body.todo.text).toBe(text);
         expect(res.body.todo.completed).toBe(false);
-        expect(res.body.todo.completedAt).toNotExist();
+        expect(res.body.todo.completedAt).toBeFalsy();
       })
       .end(done);
     })
@@ -179,13 +179,13 @@ describe('PATCH /todos/:id', () => {
     .then(todo => {
       let id = todo._id.toString();
       let text = 'Test 01';
-      request(app)
+      test(app)
       .patch(`/todos/${id}`)
       .set(authHeader, users[1].tokens[0].token)
       .send({text, completed: true})
       .expect(404)
       .expect(res => {
-        expect(res.body.error).toExist();
+        expect(res.body.error).toBeTruthy();
       })
       .end(done);
     })
@@ -197,7 +197,7 @@ describe('PATCH /todos/:id', () => {
 
   it('should return 400 for an invalid _id', done => {
     let id = 'xxxxxxx';
-    request(app)
+    test(app)
     .patch(`/todos/${id}`)
     .set(authHeader, users[0].tokens[0].token)
     .expect(400)
@@ -206,7 +206,7 @@ describe('PATCH /todos/:id', () => {
 
   it('should return 404 for a valid but non-existant _id', done => {
     let id = new ObjectID().toString();
-    request(app)
+    test(app)
     .patch(`/todos/${id}`)
     .set(authHeader, users[0].tokens[0].token)
     .expect(404)
@@ -222,7 +222,7 @@ describe('DELETE /todos/:id', () => {
     .then(todo => {
       let id = todo._id.toHexString();
       // console.log("ID:", id);
-      request(app)
+      test(app)
       .delete(`/todos/${id}`)
       .set(authHeader, users[1].tokens[0].token)
       .expect(200)
@@ -234,7 +234,7 @@ describe('DELETE /todos/:id', () => {
         return Todo.findById(id)
         .then(td => {
           // console.log(td);}
-          expect(td).toNotExist();
+          expect(td).toBeFalsy();
           done();
         });
       });
@@ -250,19 +250,19 @@ describe('DELETE /todos/:id', () => {
     .then(todo => {
       let id = todo._id.toHexString();
       // console.log("ID:", id);
-      request(app)
+      test(app)
       .delete(`/todos/${id}`)
       .set(authHeader, users[0].tokens[0].token)
       .expect(404)
       .expect(res => {
-        expect(res.body.error).toExist();
+        expect(res.body.error).toBeTruthy();
       })
       .end(err => {
         if (err) return done(err);
         return Todo.findById(id)
         .then(td => {
           // console.log(td);}
-          expect(td).toExist();
+          expect(td).toBeTruthy();
           done();
         });
       });
@@ -275,7 +275,7 @@ describe('DELETE /todos/:id', () => {
 
   it('should return 400 for an invalid _id', done => {
     let id = 'xxxxxxx';
-    request(app)
+    test(app)
     .delete(`/todos/${id}`)
     .set(authHeader, users[0].tokens[0].token)
     .expect(400)
@@ -284,7 +284,7 @@ describe('DELETE /todos/:id', () => {
 
   it('should return 404 for a valid but non-existant _id', done => {
     let id = new ObjectID().toString();
-    request(app)
+    test(app)
     .delete(`/todos/${id}`)
     .set(authHeader, users[0].tokens[0].token)
     .expect(404)
@@ -296,7 +296,7 @@ describe('DELETE /todos/:id', () => {
 describe('GET /users/me', () => {
 
   it('should return user if authenticated', done => {
-    request(app)
+    test(app)
     .get('/users/me')
     .set(authHeader, users[0].tokens[0].token)
     .expect(200)
@@ -308,11 +308,11 @@ describe('GET /users/me', () => {
   });
 
   it('should return 401 if not authenticated', done => {
-    request(app)
+    test(app)
     .get('/users/me')
     .expect(401)
     .expect(res => {
-      expect(res.body.error).toExist();
+      expect(res.body.error).toBeTruthy();
     })
     .end(done);
   });
@@ -326,39 +326,39 @@ describe('POST /users', () => {
       "email": "admin@infura.io",
       "password": "pwd0pwd1"
     };
-    request(app)
+    test(app)
     .post('/users')
     .send(newUser)
     .expect(200)
     .expect(res => {
-      expect(res.headers[authHeader]).toExist();
-      expect(res.body._id).toExist();
+      expect(res.headers[authHeader]).toBeTruthy();
+      expect(res.body._id).toBeTruthy();
       expect(res.body.email).toBe(newUser.email);
     })
     .end(err => {
       if (err) return done(err);
       User.findOne({email: newUser.email})
       .then(user => {
-        expect(user).toExist();
+        expect(user).toBeTruthy();
         expect(user.email).toBe(newUser.email);
-        expect(user.password).toNotBe(newUser.password);
+        expect(user.password).not.toBe(newUser.password);
         done();
       })
       .catch(e => done(e));
     });
   });
 
-  it('should return validation errors if request invalid', done => {
+  it('should return validation errors if test invalid', done => {
     let newUser = {
       "email": "ad@in",
       "password": "p1"
     };
-    request(app)
+    test(app)
     .post('/users')
     .send(newUser)
     .expect(400)
     .expect(res => {
-      expect(res.body.error).toExist();
+      expect(res.body.error).toBeTruthy();
     })
     .end(err => {
       if (err) return done(err);
@@ -376,18 +376,18 @@ describe('POST /users', () => {
       "email": "john@doe.org",
       "password": "p1frsdSDA7"
     };
-    request(app)
+    test(app)
     .post('/users')
     .send(newUser)
     .expect(400)
     .expect(res => {
-      expect(res.body.error).toExist();
+      expect(res.body.error).toBeTruthy();
     })
     .end(err => {
       if (err) return done(err);
       User.findOne({email: newUser.email})
       .then(user => {
-        expect(user).toExist();
+        expect(user).toBeTruthy();
         done();
       })
       .catch(e => done(e));
@@ -403,22 +403,22 @@ describe('POST /users/login', () => {
       email: users[1].email,
       password: users[1].password
     };
-    request(app)
+    test(app)
     .post('/users/login')
     .send(myUser)
     .expect(200)
     .expect(res => {
-      expect(res.headers[authHeader]).toExist();
-      expect(res.body._id).toExist();
+      expect(res.headers[authHeader]).toBeTruthy();
+      expect(res.body._id).toBeTruthy();
       expect(res.body.email).toBe(myUser.email);
     })
     .end((err, res) => {
       if (err) return done(err);
       User.findById(users[1]._id)
       .then(user => {
-        expect(user).toExist();
+        expect(user).toBeTruthy();
         expect(user.email).toBe(myUser.email);
-        expect(user.tokens[1]).toInclude({
+        expect(user.toObject().tokens[1]).toMatchObject({
           access,
           token: res.headers[authHeader]
         });
@@ -433,20 +433,20 @@ describe('POST /users/login', () => {
       email: 'user@notme.org',
       password: 'somePass'
     };
-    request(app)
+    test(app)
     .post('/users/login')
     .send(myUser)
     .expect(401)
     .expect(res => {
-      expect(res.headers[authHeader]).toNotExist();
-      expect(res.body._id).toNotExist();
-      expect(res.body.error).toExist();
+      expect(res.headers[authHeader]).toBeFalsy();
+      expect(res.body._id).toBeFalsy();
+      expect(res.body.error).toBeTruthy();
     })
     .end(err => {
       if (err) return done(err);
       User.findOne({email: myUser.email})
       .then(user => {
-        expect(user).toNotExist();
+        expect(user).toBeFalsy();
         done();
       })
       .catch(e => done(e));
@@ -458,14 +458,14 @@ describe('POST /users/login', () => {
       email: users[1].email,
       password: users[1].password + 'x'
     };
-    request(app)
+    test(app)
     .post('/users/login')
     .send(myUser)
     .expect(401)
     .expect(res => {
-      expect(res.headers[authHeader]).toNotExist();
-      expect(res.body._id).toNotExist();
-      expect(res.body.error).toExist();
+      expect(res.headers[authHeader]).toBeFalsy();
+      expect(res.body._id).toBeFalsy();
+      expect(res.body.error).toBeTruthy();
     })
     .end(err => {
       if (err) return done(err);
@@ -484,19 +484,19 @@ describe('DELETE /users/me/token', () => {
 
   it('should log out a user with a valid token', done => {
     let token = users[0].tokens[0].token;
-    request(app)
+    test(app)
     .delete('/users/me/token')
     .set(authHeader, token)
     .expect(200)
     .expect(res => {
-      expect(res.headers[authHeader]).toNotExist();
-      expect(res.body.message).toExist();
+      expect(res.headers[authHeader]).toBeFalsy();
+      expect(res.body.message).toBeTruthy();
     })
     .end(err => {
       if (err) return done(err);
       User.findById(users[0]._id)
       .then(user => {
-        expect(user).toExist();
+        expect(user).toBeTruthy();
         expect(user.tokens.length).toBe(0);
         done();
       })
@@ -506,20 +506,20 @@ describe('DELETE /users/me/token', () => {
 
   it('should fail logout for unknown token', done => {
     let token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI1YjBmYWVmY2M1ODIyYTFmYjg4NzM1N2MiLCJhY2Nlc3MiOiJhdXRoIiwiaWF0IjoxNTI3NzU0NDkyfQ.t-ctT4T7SLTAKVhFRDc4WwXgpOSRT5XXEHrAgAuYw30';
-    request(app)
+    test(app)
     .delete('/users/me/token')
     .set(authHeader, token)
     .expect(401)
     .expect(res => {
-      expect(res.headers[authHeader]).toNotExist();
-      expect(res.body._id).toNotExist();
-      expect(res.body.error).toExist();
+      expect(res.headers[authHeader]).toBeFalsy();
+      expect(res.body._id).toBeFalsy();
+      expect(res.body.error).toBeTruthy();
     })
     .end(err => {
       if (err) return done(err);
       User.findOne({ tokens: {token} })
       .then(user => {
-        expect(user).toNotExist();
+        expect(user).toBeFalsy();
         done();
       })
       .catch(e => done(e));
