@@ -2,7 +2,7 @@
   "name": "node-todo-api",
   "version": "1.0.0",
   "engines": {
-    "node": "10.2.1",
+    "node": "10.3.0",
     "npm": "6.1.0"
   },
   "description": "ToDo: A MongoDB learning project",

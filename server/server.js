@@ -15,128 +15,112 @@ var app = express();
 
 app.use(bodyParser.json());
 
-app.post('/todos', authenticate, (req, res) => {
+app.post('/todos', authenticate, async (req, res) => {
   let todo = new Todo({
     text: req.body.text,
     _creator: req.user._id
   });
-  todo.save()
-  .then(doc => {
+  try {
+    let doc = await todo.save();
     console.log(`Saved todo ${doc}`);
     res.send(doc);
-  })
-  .catch(e => {
+  } catch(e) {
     console.log(`Unable to save todo: ${e.message}`);
     res.status(400).send({error: e.message});
-  });
+  }
 });
 
-app.get('/todos', authenticate, (req, res) => {
-  Todo.find({_creator: req.user._id})
-  .then(todos => {
+app.get('/todos', authenticate, async (req, res) => {
+  try {
+    let todos = await Todo.find({_creator: req.user._id});
     res.send({todos});
-  })
-  .catch(e => {
+  } catch(e) {
     res.status(400).send({error: e.message});
     console.log(e.message);
-  });
-});
-
-app.get('/todos/:id', authenticate, (req, res) => {
-  let {id} = req.params;
-  if (!ObjectID.isValid(id)) {
-    res.status(400).send({error: `_id '${id}' has an invalid format`});
-  } else {
-    Todo.findOne({_creator: req.user._id, _id: id})
-    .then(todo => {
-      res.status(todo ? 200 : 404).send(todo ? {todo} : {error: `_id '${id}' not found`});
-    })
-    .catch(e => {
-      res.status(400).send({error: e.message});
-      console.log(e.message);
-    });
   }
 });
 
-app.delete('/todos/:id', authenticate, (req, res) => {
+app.get('/todos/:id', authenticate, async (req, res) => {
   let {id} = req.params;
-  if (!ObjectID.isValid(id)) {
-    res.status(400).send({error: `_id '${id}' has an invalid format`});
-  } else {
-    Todo.findOneAndRemove({_creator: req.user._id, _id: id})
-    .then(todo => {
-      res.status(todo ? 200 : 404).send(todo ? {todo} : {error: `_id '${id}' not found`});
-    })
-    .catch(e => {
-      res.status(400).send({error: e.message});
-      console.log(e.message);
-    });
+  if (!ObjectID.isValid(id)) return res.status(400).send({error: `_id '${id}' has an invalid format`});
+  try {
+    let todo = await Todo.findOne({_creator: req.user._id, _id: id});
+    res.status(todo ? 200 : 404).send(todo ? {todo} : {error: `_id '${id}' not found`});
+  } catch(e) {
+    res.status(400).send({error: e.message});
+    console.log(e.message);
   }
 });
 
-app.patch('/todos/:id', authenticate, (req, res) => {
+app.delete('/todos/:id', authenticate, async (req, res) => {
+  let {id} = req.params;
+  if (!ObjectID.isValid(id)) return res.status(400).send({error: `_id '${id}' has an invalid format`});
+  try {
+    let todo = await Todo.findOneAndRemove({_creator: req.user._id, _id: id});
+    res.status(todo ? 200 : 404).send(todo ? {todo} : {error: `_id '${id}' not found`});
+  } catch(e) {
+    res.status(400).send({error: e.message});
+    console.log(e.message);
+  }
+});
+
+app.patch('/todos/:id', authenticate, async (req, res) => {
   let {id} = req.params;
   let body = _.pick(req.body, ['text', 'completed']);
-  if (!ObjectID.isValid(id)) {
-    return res.status(400).send({error: `_id '${id}' has an invalid format`});
-  }
+  if (!ObjectID.isValid(id)) return res.status(400).send({error: `_id '${id}' has an invalid format`});
   if (_.isBoolean(body.completed) && body.completed) {
     body.completedAt = new Date().getTime();
-  }
-  else {
+  } else {
     body.completed = false;
     body.completedAt = null;
   }
-  Todo.findOneAndUpdate({_creator: req.user._id, _id: id}, { $set:  body }, { new: true })
-  .then(todo => {
+  try {
+    let todo = await Todo.findOneAndUpdate({_creator: req.user._id, _id: id}, {$set: body}, {new: true});
     res.status(todo ? 200 : 404).send(todo ? {todo} : {error: `_id '${id}' not found`});
-  })
-  .catch(e => {
+  } catch(e) {
     res.status(400).send({error: e.message});
     console.log(e.message);
-  });
+  }
 });
 
-app.post('/users', (req, res) => {
-  // console.log(req.body);
-  let body = _.pick(req.body, ['email', 'password']);
-  let user = new User(body);
-  user.save()
-  .then(() => user.generateAuthToken())
-  .then(token => {
+app.post('/users', async (req, res) => {
+  try {
+    let body = _.pick(req.body, ['email', 'password']);
+    let user = new User(body);
+    user = await user.save();
+    let token = await user.generateAuthToken();
     console.log(`Saved user ${user}`);
     res.header(config.authHeader, token).send(user);
-  })
-  .catch(e => {
+  } catch(e) {
     console.log(`Unable to save user: ${e.message}`);
     res.status(400).send({error: e.message});
-  });
+  }
 });
 
 app.get('/users/me', authenticate, (req, res) => {
   res.send(req.user);
 });
 
-app.post('/users/login', (req, res) => {
-  let body = _.pick(req.body, ['email', 'password']);
-  return User.findByCredentials(body.email, body.password)
-  .then(user => { 
-    return user.generateAuthToken()
-    .then(token => res.status(200).header(config.authHeader, token).send(user));
-  })
-  .catch(e => {
+app.post('/users/login', async (req, res) => {
+  try {
+    let body = _.pick(req.body, ['email', 'password']);
+    let user = await User.findByCredentials(body.email, body.password);
+    let token = await user.generateAuthToken();
+    res.status(200).header(config.authHeader, token).send(user);
+  } catch(e) {
     console.log(`Unable to login user: ${e.message}`);
     res.status(401).send({error: e.message});
-  });
+  }
 });
 
-app.delete('/users/me/token', authenticate, (req, res) => {
-  return req.user.removeToken(req.token)
-  .then(() => res.status(200).send({message: `User ${req.user.email} logged out`}))
-  .catch(e => {
+app.delete('/users/me/token', authenticate, async (req, res) => {
+  try {
+    await req.user.removeToken(req.token);
+    res.status(200).send({message: `User ${req.user.email} logged out`});
+  } catch(e) {
     console.log(`Unable to logout user: ${e.message}`);
     res.status(401).send({error: e.message});
-  });
+  };
 });
 
 app.listen(config.port, () => {
