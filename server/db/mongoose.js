@@ -2,11 +2,10 @@
 
 const
   mongoose = require('mongoose'),
-
-    config = require('../config/config'); 
+{mongoUrl} = require('../config/config');
 
 mongoose.Promise = global.Promise;
-mongoose.connect(config.mongoUrl)
+mongoose.connect(mongoUrl)
 .then(m => console.log('Connected to database', m.connections[0].name))
 .catch(e => console.log(e.message));
 
