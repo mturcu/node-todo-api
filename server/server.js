@@ -11,17 +11,17 @@ const  express = require('express'),
 {authenticate} = require('./middleware/authenticate'),
         config = require('./config/config');
 
-var app = express();
+const app = express();
 
 app.use(bodyParser.json());
 
 app.post('/todos', authenticate, async (req, res) => {
-  let todo = new Todo({
+  const todo = new Todo({
     text: req.body.text,
     _creator: req.user._id
   });
   try {
-    let doc = await todo.save();
+    const doc = await todo.save();
     console.log(`Saved todo ${doc}`);
     res.send(doc);
   } catch(e) {
@@ -32,7 +32,7 @@ app.post('/todos', authenticate, async (req, res) => {
 
 app.get('/todos', authenticate, async (req, res) => {
   try {
-    let todos = await Todo.find({_creator: req.user._id});
+    const todos = await Todo.find({_creator: req.user._id});
     res.send({todos});
   } catch(e) {
     res.status(400).send({error: e.message});
@@ -41,10 +41,10 @@ app.get('/todos', authenticate, async (req, res) => {
 });
 
 app.get('/todos/:id', authenticate, async (req, res) => {
-  let {id} = req.params;
+  const {id} = req.params;
   if (!ObjectID.isValid(id)) return res.status(400).send({error: `_id '${id}' has an invalid format`});
   try {
-    let todo = await Todo.findOne({_creator: req.user._id, _id: id});
+    const todo = await Todo.findOne({_creator: req.user._id, _id: id});
     res.status(todo ? 200 : 404).send(todo ? {todo} : {error: `_id '${id}' not found`});
   } catch(e) {
     res.status(400).send({error: e.message});
@@ -53,10 +53,10 @@ app.get('/todos/:id', authenticate, async (req, res) => {
 });
 
 app.delete('/todos/:id', authenticate, async (req, res) => {
-  let {id} = req.params;
+  const {id} = req.params;
   if (!ObjectID.isValid(id)) return res.status(400).send({error: `_id '${id}' has an invalid format`});
   try {
-    let todo = await Todo.findOneAndRemove({_creator: req.user._id, _id: id});
+    const todo = await Todo.findOneAndRemove({_creator: req.user._id, _id: id});
     res.status(todo ? 200 : 404).send(todo ? {todo} : {error: `_id '${id}' not found`});
   } catch(e) {
     res.status(400).send({error: e.message});
@@ -65,8 +65,8 @@ app.delete('/todos/:id', authenticate, async (req, res) => {
 });
 
 app.patch('/todos/:id', authenticate, async (req, res) => {
-  let {id} = req.params;
-  let body = _.pick(req.body, ['text', 'completed']);
+  const {id} = req.params;
+  const body = _.pick(req.body, ['text', 'completed']);
   if (!ObjectID.isValid(id)) return res.status(400).send({error: `_id '${id}' has an invalid format`});
   if (_.isBoolean(body.completed) && body.completed) {
     body.completedAt = new Date().getTime();
@@ -75,7 +75,7 @@ app.patch('/todos/:id', authenticate, async (req, res) => {
     body.completedAt = null;
   }
   try {
-    let todo = await Todo.findOneAndUpdate({_creator: req.user._id, _id: id}, {$set: body}, {new: true});
+    const todo = await Todo.findOneAndUpdate({_creator: req.user._id, _id: id}, {$set: body}, {new: true});
     res.status(todo ? 200 : 404).send(todo ? {todo} : {error: `_id '${id}' not found`});
   } catch(e) {
     res.status(400).send({error: e.message});
@@ -85,10 +85,10 @@ app.patch('/todos/:id', authenticate, async (req, res) => {
 
 app.post('/users', async (req, res) => {
   try {
-    let body = _.pick(req.body, ['email', 'password']);
+    const body = _.pick(req.body, ['email', 'password']);
     let user = new User(body);
     user = await user.save();
-    let token = await user.generateAuthToken();
+    const token = await user.generateAuthToken();
     console.log(`Saved user ${user}`);
     res.header(config.authHeader, token).send(user);
   } catch(e) {
@@ -103,9 +103,9 @@ app.get('/users/me', authenticate, (req, res) => {
 
 app.post('/users/login', async (req, res) => {
   try {
-    let body = _.pick(req.body, ['email', 'password']);
-    let user = await User.findByCredentials(body.email, body.password);
-    let token = await user.generateAuthToken();
+    const body = _.pick(req.body, ['email', 'password']);
+    const user = await User.findByCredentials(body.email, body.password);
+    const token = await user.generateAuthToken();
     res.status(200).header(config.authHeader, token).send(user);
   } catch(e) {
     console.log(`Unable to login user: ${e.message}`);

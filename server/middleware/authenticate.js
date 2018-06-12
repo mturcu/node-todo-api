@@ -4,8 +4,8 @@ const
   {User} = require('../models/user'),
   {authHeader} = require('../config/config');
 
-var authenticate = async (req, res, next) => {
-  let token = req.header(authHeader);
+const authenticate = async (req, res, next) => {
+  const token = req.header(authHeader);
   try {
     let user = await User.findByToken(token);
     if (!user) throw new Error('User or token not found');
