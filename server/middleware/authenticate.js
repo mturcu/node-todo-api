@@ -1,8 +1,7 @@
 "use strict";
 
-const
-  {User} = require('../models/user'),
-  {authHeader} = require('../config/config');
+const {User} = require('../models/user');
+const {authHeader} = require('../config/config');
 
 const authenticate = async (req, res, next) => {
   const token = req.header(authHeader);

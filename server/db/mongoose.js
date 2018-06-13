@@ -1,8 +1,7 @@
 "use strict";
 
-const
-  mongoose = require('mongoose'),
-{mongoUrl} = require('../config/config');
+const mongoose = require('mongoose');
+const {mongoUrl} = require('../config/config');
 
 mongoose.Promise = global.Promise;
 mongoose.connect(mongoUrl)

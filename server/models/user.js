@@ -1,13 +1,12 @@
 "use strict";
 
-const
-   mongoose = require('mongoose'),
-  validator = require('validator'),
-        jwt = require('jsonwebtoken'),
-     bcrypt = require('bcryptjs'),
-          _ = require('lodash'),
+const mongoose = require('mongoose');
+const {pick} = require('lodash');
+const {isEmail} = require('validator');
+const {sign, verify} = require('jsonwebtoken');
+const {hash, compare} = require('bcryptjs');
 
-{access, secret} = require('../config/config');
+const {access, secret} = require('../config/config');
 
 const UserSchema = mongoose.Schema({
   email: {
@@ -17,7 +16,7 @@ const UserSchema = mongoose.Schema({
     trim: true,
     unique: true,
     validate: {
-      validator: validator.isEmail,
+      validator: isEmail,
       message: '{VALUE} is not a valid e-mail address'
     }
   },
@@ -41,12 +40,12 @@ const UserSchema = mongoose.Schema({
 });
 
 UserSchema.methods.toJSON = function() {
-  return _.pick(this.toObject(), ['_id','email']);
+  return pick(this.toObject(), ['_id','email']);
 }
 
 UserSchema.methods.generateAuthToken = async function() {
   const user = this;
-  const token = jwt.sign({_id: user._id.toHexString(), access}, secret).toString();
+  const token = sign({_id: user._id.toHexString(), access}, secret).toString();
   user.tokens = user.tokens.concat({access, token});
   try {
     await user.save();
@@ -60,7 +59,7 @@ UserSchema.methods.removeToken = async function(token) {
   const user = this;
   try {
     await user.update({$pull: {tokens: {token}}});
-    console.log('Removed token from user', user.email);
+    console.log('Removed token = require( user', user.email);
   } catch(e) {
     console.log('removeToken user.update() error:', e.message);
   }
@@ -70,7 +69,7 @@ UserSchema.statics.findByToken = async function(token) {
   const User = this;
   let decoded, user;
   try {
-    decoded = await jwt.verify(token, secret);
+    decoded = await verify(token, secret);
     if (!decoded) throw new Error('jwt.verify did not return a valid result');
   }
   catch(e) {
@@ -95,7 +94,7 @@ UserSchema.statics.findByCredentials = async function(email, password) {
   try {
     const user = await User.findOne({email});
     if (!user) throw new Error('User not found');
-    let pwd = await bcrypt.compare(password, user.password);
+    let pwd = await compare(password, user.password);
     if (!pwd) throw new Error('Bad password');
     return user;
   } catch(e) {
@@ -104,7 +103,7 @@ UserSchema.statics.findByCredentials = async function(email, password) {
 }
 
 UserSchema.pre('save', async function() {
-  if (this.isModified('password')) this.password = await bcrypt.hash(this.password, 10);
+  if (this.isModified('password')) this.password = await hash(this.password, 10);
 });
 
 const User = mongoose.model('User', UserSchema);
